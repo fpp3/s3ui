@@ -1,0 +1,45 @@
+// RunningActivity screen test using PCF8814 and s3ui wrapper (static bitmap, non-animated)
+
+#include <s3ui.h>
+#include <PCF8814.h>
+#include <Picopixel.h>
+
+// Simple 24x24 bitmap to render in the activity screen
+static const unsigned char PROGMEM image_ActivityBitmap_bits[] = {
+	0x00,0x00,0x00,0x07,0xff,0xf0,0x04,0x00,0x10,0x03,0xff,0xe0,
+	0x01,0x00,0x40,0x01,0x00,0x40,0x01,0x7f,0x40,0x01,0x3e,0x40,
+	0x00,0x9c,0x80,0x00,0x49,0x00,0x00,0x22,0x00,0x00,0x14,0x00,
+	0x00,0x14,0x00,0x00,0x22,0x00,0x00,0x49,0x00,0x00,0x80,0x80,
+	0x01,0x08,0x40,0x01,0x3e,0x40,0x01,0x7f,0x40,0x01,0x00,0x40,
+	0x03,0xff,0xe0,0x04,0x00,0x10,0x07,0xff,0xf0,0x00,0x00,0x00
+};
+
+static const uint16_t kBitmapW = 24;
+static const uint16_t kBitmapH = 24;
+
+// Pins for Nokia 1100 (PCF8814) display (SCE, SCLK, SDIN, RST)
+static PCF8814 lcd(19, 18, 23, 21);
+static s3ui ui;
+
+void setup() {
+	// Initialize display
+	lcd.begin();
+	lcd.setContrast(0x0F); // Adjust if needed for your module
+	lcd.displayOn();
+
+	// Initialize wrapper and fonts
+	ui.setDisplay(&lcd, 96, 65);
+	ui.setTitleFont(&Picopixel);
+	ui.setContentFont(&Picopixel);
+	ui.setTitleSize(1);
+	ui.setContentSize(1);
+
+	// Render a single static running activity screen
+	ui.runningActivityScreen("Running", "98%", image_ActivityBitmap_bits, kBitmapW, kBitmapH, "Scanning channels...");
+	lcd.display();
+}
+
+void loop() {
+	// No animation needed for this test; just keep the screen visible
+	delay(100);
+}
