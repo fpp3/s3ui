@@ -163,8 +163,8 @@ public:
    * @brief Render a confirmation content: centered question and up to 3 options.
    * @param question Text/question to render, horizontally centered.
    * @param options Array of option labels (1-3).
-   * @param numOptions Number of options (1-3).
-   * @param selectedIndex Zero-based index of the selected option.
+   * @param numOptions Number of options (1-3). Values >3 are capped at 3. If 0, method returns early.
+   * @param selectedIndex Zero-based index of the selected option. If >= numOptions, clamped to numOptions-1.
    * @note This method does not clear the screen when called.
    */
   void showConfirm(const String &question, const String *options, uint8_t numOptions, uint8_t selectedIndex);
@@ -176,8 +176,8 @@ public:
    * @param bitmapH Bitmap height in pixels.
    * @param question Text/question to render, centered horizontally.
    * @param options Array of option labels (1-3).
-   * @param numOptions Number of options (1-3).
-   * @param selectedIndex Zero-based index of the selected option.
+   * @param numOptions Number of options (1-3). Values >3 are capped at 3. If 0, method returns early.
+   * @param selectedIndex Zero-based index of the selected option. If >= numOptions, clamped to numOptions-1.
    * @note This method does not clear the screen when called.
    */
   void showConfirm(const uint8_t *bitmap, uint16_t bitmapW, uint16_t bitmapH, const String &question,
@@ -254,8 +254,8 @@ public:
    * @param batteryPercentage Battery status text (e.g. "84%") aligned to top-right.
    * @param question Text/question to render.
    * @param options Array of option labels (1-3).
-   * @param numOptions Number of options (1-3).
-   * @param selectedIndex Zero-based index of the selected option.
+   * @param numOptions Number of options (1-3). Values >3 are capped at 3. If 0, method returns early.
+   * @param selectedIndex Zero-based index of the selected option. If >= numOptions, clamped to numOptions-1.
    * @note This method clears the screen each time it is called.
    */
   void confirmScreen(const String &title, const String &batteryPercentage, const String &question,
@@ -270,8 +270,8 @@ public:
    * @param bitmapH Bitmap height in pixels.
    * @param question Text/question to render.
    * @param options Array of option labels (1-3).
-   * @param numOptions Number of options (1-3).
-   * @param selectedIndex Zero-based index of the selected option.
+   * @param numOptions Number of options (1-3). Values >3 are capped at 3. If 0, method returns early.
+   * @param selectedIndex Zero-based index of the selected option. If >= numOptions, clamped to numOptions-1.
    * @note This method clears the screen each time it is called.
    */
   void confirmScreen(const String &title, const String &batteryPercentage, const uint8_t *bitmap, uint16_t bitmapW,
