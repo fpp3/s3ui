@@ -9,6 +9,7 @@ s3ui provides ready-to-use screens for common UI patterns on small displays:
 - **Editable Values**: Options with right-aligned editable values
 - **Running Activity**: Static or animated bitmap displays with captions
 - **Activity Log**: Scrolling live activity log
+- **Confirmation Screen**: Action confirmation with text, optional bitmap, and smart button layout
 
 The library is designed to be non-blocking and works with any Adafruit_GFX-compatible display (e.g., PCF8814/Nokia 1100, SSD1306, etc.).
 
@@ -20,6 +21,7 @@ The library is designed to be non-blocking and works with any Adafruit_GFX-compa
 - Auto-scrolling log with word wrapping
 - Smooth frame-based animations
 - Automatic layout calculations
+- Smart button layout (horizontal, 2+1, or vertical stack)
 
 ## Installation
 
@@ -85,6 +87,7 @@ void loop() {
 - `optionValueSetScreen(...)` - Display options with editable values
 - `runningActivityScreen(...)` - Display static or animated activity
 - `activityLiveLogScreen(...)` - Display scrolling log
+- `confirmScreen(...)` - Display confirmation dialog with optional bitmap
 
 ### Updates
 - `update()` - Call in loop() to handle animations and log refresh
@@ -107,6 +110,7 @@ See the `examples/` folder for complete working examples:
 - `optionSelect_test` - Option selection menu
 - `optionValueSet_test` - Editable values interface
 - `static_runningActivityScreen_test` - Static activity display
+- `confirmationScreen_test` - Confirmation dialog with smart layout
 
 ## License
 
