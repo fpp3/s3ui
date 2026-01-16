@@ -273,8 +273,6 @@ void setup() {
   ui.setContentFont(&Picopixel);
   ui.setTitleSize(1);
   ui.setContentSize(1);
-
-
   // Initial render
   renderCurrentTest();
 }
