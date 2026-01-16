@@ -300,4 +300,6 @@ void loop() {
   
   // Allow UI to update (not needed for confirm screens, but good practice)
   ui.update();
+  // Small delay to prevent a tight loop from consuming unnecessary CPU/power
+  delay(10);
 }
