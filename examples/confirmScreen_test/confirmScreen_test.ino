@@ -2,9 +2,9 @@
 // Demonstrates: with/without bitmap, short/long text, 1-3 options, cycling selection
 
 #include <Arduino.h>
-#include "s3ui.h"
-#include "PCF8814.h"
-#include "Fonts/Picopixel.h"
+#include <s3ui.h>
+#include <PCF8814.h>
+#include <Fonts/Picopixel.h>
 
 // Pins for Nokia 1100 (PCF8814) display (SCE, SCLK, SDIN, RST)
 static PCF8814 lcd(19, 18, 23, 21);
