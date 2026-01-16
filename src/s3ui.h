@@ -158,6 +158,31 @@ public:
    */
   void showActivityLiveLog();
 
+  // Confirm: Text/question with up to 3 selectable options, optional bitmap
+  /**
+   * @brief Render a confirmation content: centered question and up to 3 options.
+   * @param question Text/question to render, horizontally centered.
+   * @param options Array of option labels (1-3).
+   * @param numOptions Number of options (1-3).
+   * @param selectedIndex Zero-based index of the selected option.
+   * @note This method does not clear the screen when called.
+   */
+  void showConfirm(const String &question, const String *options, uint8_t numOptions, uint8_t selectedIndex);
+
+  /**
+   * @brief Render a confirmation content with an optional bitmap above the question.
+   * @param bitmap Pointer to 1-bit bitmap data (centered). If nullptr, behaves like the overload without bitmap.
+   * @param bitmapW Bitmap width in pixels.
+   * @param bitmapH Bitmap height in pixels.
+   * @param question Text/question to render, centered horizontally.
+   * @param options Array of option labels (1-3).
+   * @param numOptions Number of options (1-3).
+   * @param selectedIndex Zero-based index of the selected option.
+   * @note This method does not clear the screen when called.
+   */
+  void showConfirm(const uint8_t *bitmap, uint16_t bitmapW, uint16_t bitmapH, const String &question,
+                   const String *options, uint8_t numOptions, uint8_t selectedIndex);
+
   // Screen rendering methods
 
   /**
@@ -222,6 +247,36 @@ public:
    * @note This method clears the screen each time it is called.
    */
   void activityLiveLogScreen(const String &title, const String &batteryPercentage);
+
+  /**
+   * @brief Convenience screen: title+border + confirm (no bitmap).
+   * @param title Title text to show in the top-left.
+   * @param batteryPercentage Battery status text (e.g. "84%") aligned to top-right.
+   * @param question Text/question to render.
+   * @param options Array of option labels (1-3).
+   * @param numOptions Number of options (1-3).
+   * @param selectedIndex Zero-based index of the selected option.
+   * @note This method clears the screen each time it is called.
+   */
+  void confirmScreen(const String &title, const String &batteryPercentage, const String &question,
+                     const String *options, uint8_t numOptions, uint8_t selectedIndex);
+
+  /**
+   * @brief Convenience screen: title+border + confirm (with optional bitmap).
+   * @param title Title text to show in the top-left.
+   * @param batteryPercentage Battery status text (e.g. "84%") aligned to top-right.
+   * @param bitmap Pointer to 1-bit bitmap data (centered). Pass nullptr to omit.
+   * @param bitmapW Bitmap width in pixels.
+   * @param bitmapH Bitmap height in pixels.
+   * @param question Text/question to render.
+   * @param options Array of option labels (1-3).
+   * @param numOptions Number of options (1-3).
+   * @param selectedIndex Zero-based index of the selected option.
+   * @note This method clears the screen each time it is called.
+   */
+  void confirmScreen(const String &title, const String &batteryPercentage, const uint8_t *bitmap, uint16_t bitmapW,
+                     uint16_t bitmapH, const String &question, const String *options, uint8_t numOptions,
+                     uint8_t selectedIndex);
 
   /**
    * @brief Non-blocking update; advances animations and refreshes live log.

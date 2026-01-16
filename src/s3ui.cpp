@@ -533,6 +533,236 @@ void s3ui::showActivityLiveLog() {
   }
 }
 
+// Confirm: content-only (no screen clear) without bitmap
+void s3ui::showConfirm(const String &question, const String *options, uint8_t numOptions, uint8_t selectedIndex) {
+  // Delegate to the bitmap overload with nullptr bitmap
+  showConfirm(nullptr, 0, 0, question, options, numOptions, selectedIndex);
+}
+
+// Confirm: content-only (no screen clear) with optional bitmap
+void s3ui::showConfirm(const uint8_t *bitmap, uint16_t bitmapW, uint16_t bitmapH, const String &question,
+                       const String *options, uint8_t numOptions, uint8_t selectedIndex) {
+  if (!gfx || !contentFont)
+    return;
+
+  // Validate numOptions to be in range 1-3
+  if (numOptions == 0)
+    numOptions = 1;
+  if (numOptions > 3)
+    numOptions = 3;
+
+  // Validate selectedIndex to not exceed numOptions-1
+  if (selectedIndex >= numOptions)
+    selectedIndex = numOptions - 1;
+
+  // Content box metrics
+  uint16_t contentTop = titleFontHeight + titleMargin + contentBoxThickness;
+  uint16_t contentLeft = contentBoxThickness;
+  uint16_t contentWidth = displayWidth - 2 * contentBoxThickness;
+  uint16_t contentHeight = displayHeight - (titleFontHeight + titleMargin) - 2 * contentBoxThickness;
+  uint16_t contentBottom = contentTop + contentHeight;
+
+  // Optional bitmap: top at optionPadding below inner border, horizontally centered
+  int16_t bmpX = 0;
+  int16_t bmpY = 0;
+  bool hasBitmap = (bitmap != nullptr) && (bitmapW > 0) && (bitmapH > 0);
+  if (hasBitmap) {
+    bmpY = contentTop + optionPadding;
+    bmpX = (bitmapW >= contentWidth) ? (int16_t)contentLeft
+                                     : (int16_t)contentLeft + ((int16_t)contentWidth - (int16_t)bitmapW) / 2;
+    gfx->drawBitmap(bmpX, bmpY, bitmap, bitmapW, bitmapH, 1);
+  }
+
+  // Question: wrap text to fit, placed half line below bitmap bottom (accounting for baseline positioning)
+  gfx->setFont(contentFont);
+  gfx->setTextColor(1);
+  gfx->setTextWrap(false);
+  
+  int16_t maxQWidth = (int16_t)contentWidth - 2 * optionPadding;
+  int16_t qStartY;
+  if (hasBitmap) {
+    // Half line below bitmap bottom, plus full font height to account for baseline
+    qStartY = bmpY + (int16_t)bitmapH + (int16_t)(contentFontHeight / 2) + (int16_t)contentFontHeight;
+  } else {
+    // Without bitmap, start one line below inner top plus font height for baseline
+    qStartY = contentTop + optionPadding + (int16_t)contentFontHeight;
+  }
+
+  // Wrap and render question text
+  String qText = question;
+  uint16_t qIdx = 0;
+  int16_t currentY = qStartY;
+  while (qIdx < qText.length()) {
+    uint16_t chunkLen = findWrapPoint(qText, qIdx, maxQWidth);
+    if (chunkLen == 0)
+      chunkLen = 1;
+    
+    String line = qText.substring(qIdx, qIdx + chunkLen);
+    int16_t lineW = strWidth(line, contentFont, contentSize);
+    int16_t lineX = (int16_t)contentLeft + ((int16_t)contentWidth - lineW) / 2;
+    
+    gfx->setCursor(lineX, currentY - 1);
+    gfx->print(line);
+    
+    currentY += contentFontHeight;
+    qIdx += chunkLen;
+  }
+
+  // Options: calculate layout (horizontal if they fit, otherwise stacked)
+  if (numOptions == 0 || options == nullptr)
+    return;
+
+  uint16_t buttonHeight = contentFontHeight + 2 * optionPadding;
+  uint8_t hSpacing = optionPadding; // horizontal spacing between buttons
+  uint8_t vSpacing = optionPadding; // vertical spacing between buttons
+
+  // Calculate button widths
+  int16_t btnWidths[3];
+  int16_t totalWidth = 0;
+  for (uint8_t i = 0; i < numOptions; i++) {
+    int16_t labelW = strWidth(options[i], contentFont, contentSize);
+    int16_t hPadding = 2 * optionPadding;
+    btnWidths[i] = labelW + 2 * hPadding;
+    totalWidth += btnWidths[i];
+  }
+  int16_t totalWidthWithSpacing = totalWidth + (numOptions - 1) * hSpacing;
+  int16_t availWidth = (int16_t)contentWidth - 2 * optionPadding;
+
+  // Bottom of the last option must be optionPadding px higher than inner border bottom
+  int16_t buttonsBlockBottom = (int16_t)contentBottom - (int16_t)optionPadding;
+
+  // Determine layout: try horizontal first
+  bool allHorizontal = (numOptions <= 3 && totalWidthWithSpacing <= availWidth);
+  bool twoTopOneBottom = false;
+  
+  if (!allHorizontal && numOptions == 3) {
+    // Try 2 on top, 1 on bottom
+    int16_t topTwoWidth = btnWidths[0] + hSpacing + btnWidths[1];
+    twoTopOneBottom = (topTwoWidth <= availWidth && btnWidths[2] <= availWidth);
+  }
+
+  if (allHorizontal) {
+    // All buttons on one row
+    int16_t rowY = buttonsBlockBottom - buttonHeight;
+    int16_t rowStartX = (int16_t)contentLeft + ((int16_t)contentWidth - totalWidthWithSpacing) / 2;
+    int16_t currentX = rowStartX;
+
+    for (uint8_t i = 0; i < numOptions; i++) {
+      bool selected = (i == selectedIndex);
+      if (selected) {
+        gfx->fillRect(currentX, rowY, btnWidths[i], buttonHeight, 1);
+        gfx->drawRect(currentX, rowY, btnWidths[i], buttonHeight, 1);
+      } else {
+        gfx->drawRect(currentX, rowY, btnWidths[i], buttonHeight, 1);
+      }
+
+      // Label
+      int16_t labelW = strWidth(options[i], contentFont, contentSize);
+      int16_t textX = currentX + (btnWidths[i] - labelW) / 2;
+      int16_t textBaselineY = rowY + (buttonHeight + contentFontHeight - 1) / 2 - 1;
+      gfx->setCursor(textX, textBaselineY);
+      gfx->setTextColor(selected ? 0 : 1);
+      gfx->print(options[i]);
+
+      currentX += btnWidths[i] + hSpacing;
+    }
+  } else if (twoTopOneBottom) {
+    // Two buttons on top row, one on bottom
+    int16_t topRowY = buttonsBlockBottom - (2 * buttonHeight + vSpacing);
+    int16_t bottomRowY = buttonsBlockBottom - buttonHeight;
+    
+    // Top row (buttons 0 and 1)
+    int16_t topRowWidth = btnWidths[0] + hSpacing + btnWidths[1];
+    int16_t topRowStartX = (int16_t)contentLeft + ((int16_t)contentWidth - topRowWidth) / 2;
+    
+    for (uint8_t i = 0; i < 2; i++) {
+      int16_t btnX = topRowStartX + (i == 0 ? 0 : btnWidths[0] + hSpacing);
+      bool selected = (i == selectedIndex);
+      
+      if (selected) {
+        gfx->fillRect(btnX, topRowY, btnWidths[i], buttonHeight, 1);
+        gfx->drawRect(btnX, topRowY, btnWidths[i], buttonHeight, 1);
+      } else {
+        gfx->drawRect(btnX, topRowY, btnWidths[i], buttonHeight, 1);
+      }
+
+      int16_t labelW = strWidth(options[i], contentFont, contentSize);
+      int16_t textX = btnX + (btnWidths[i] - labelW) / 2;
+      int16_t textBaselineY = topRowY + (buttonHeight + contentFontHeight - 1) / 2 - 1;
+      gfx->setCursor(textX, textBaselineY);
+      gfx->setTextColor(selected ? 0 : 1);
+      gfx->print(options[i]);
+    }
+    
+    // Bottom row (button 2)
+    int16_t btnX = (int16_t)contentLeft + ((int16_t)contentWidth - btnWidths[2]) / 2;
+    bool selected = (2 == selectedIndex);
+    
+    if (selected) {
+      gfx->fillRect(btnX, bottomRowY, btnWidths[2], buttonHeight, 1);
+      gfx->drawRect(btnX, bottomRowY, btnWidths[2], buttonHeight, 1);
+    } else {
+      gfx->drawRect(btnX, bottomRowY, btnWidths[2], buttonHeight, 1);
+    }
+
+    int16_t labelW = strWidth(options[2], contentFont, contentSize);
+    int16_t textX = btnX + (btnWidths[2] - labelW) / 2;
+    int16_t textBaselineY = bottomRowY + (buttonHeight + contentFontHeight - 1) / 2 - 1;
+    gfx->setCursor(textX, textBaselineY);
+    gfx->setTextColor(selected ? 0 : 1);
+    gfx->print(options[2]);
+  } else {
+    // Vertical stack
+    uint16_t totalButtonsHeight = (uint16_t)numOptions * buttonHeight + (uint16_t)(numOptions - 1) * vSpacing;
+    int16_t buttonsBlockTop = buttonsBlockBottom - (int16_t)totalButtonsHeight;
+
+    for (uint8_t i = 0; i < numOptions; i++) {
+      int16_t btnX = (int16_t)contentLeft + ((int16_t)contentWidth - btnWidths[i]) / 2;
+      int16_t btnY = buttonsBlockTop + i * (buttonHeight + vSpacing);
+
+      bool selected = (i == selectedIndex);
+      if (selected) {
+        gfx->fillRect(btnX, btnY, btnWidths[i], buttonHeight, 1);
+        gfx->drawRect(btnX, btnY, btnWidths[i], buttonHeight, 1);
+      } else {
+        gfx->drawRect(btnX, btnY, btnWidths[i], buttonHeight, 1);
+      }
+
+      int16_t labelW = strWidth(options[i], contentFont, contentSize);
+      int16_t textX = btnX + (btnWidths[i] - labelW) / 2;
+      int16_t textBaselineY = btnY + (buttonHeight + contentFontHeight - 1) / 2 - 1;
+      gfx->setCursor(textX, textBaselineY);
+      gfx->setTextColor(selected ? 0 : 1);
+      gfx->print(options[i]);
+    }
+  }
+}
+
+// Confirm screen: wrapper without bitmap
+void s3ui::confirmScreen(const String &title, const String &batteryPercentage, const String &question,
+                         const String *options, uint8_t numOptions, uint8_t selectedIndex) {
+  gfx->fillScreen(0);
+
+  animationActive = false;
+  logActive = false;
+
+  showTitleAndBorder(title, batteryPercentage);
+  showConfirm(question, options, numOptions, selectedIndex);
+}
+
+// Confirm screen: wrapper with optional bitmap
+void s3ui::confirmScreen(const String &title, const String &batteryPercentage, const uint8_t *bitmap, uint16_t bitmapW,
+                         uint16_t bitmapH, const String &question, const String *options, uint8_t numOptions,
+                         uint8_t selectedIndex) {
+  gfx->fillScreen(0);
+
+  animationActive = false;
+  logActive = false;
+
+  showTitleAndBorder(title, batteryPercentage);
+  showConfirm(bitmap, bitmapW, bitmapH, question, options, numOptions, selectedIndex);
+}
+
 // Non-blocking update - handles animation frames and log screen refresh
 void s3ui::update() {
   if (!gfx)
