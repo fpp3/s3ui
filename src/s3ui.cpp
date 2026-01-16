@@ -545,8 +545,15 @@ void s3ui::showConfirm(const uint8_t *bitmap, uint16_t bitmapW, uint16_t bitmapH
   if (!gfx || !contentFont)
     return;
 
+  // Validate numOptions to be in range 1-3
+  if (numOptions == 0)
+    numOptions = 1;
   if (numOptions > 3)
     numOptions = 3;
+
+  // Validate selectedIndex to not exceed numOptions-1
+  if (selectedIndex >= numOptions)
+    selectedIndex = numOptions - 1;
 
   // Content box metrics
   uint16_t contentTop = titleFontHeight + titleMargin + contentBoxThickness;
