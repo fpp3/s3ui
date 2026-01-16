@@ -546,7 +546,7 @@ void s3ui::showConfirm(const uint8_t *bitmap, uint16_t bitmapW, uint16_t bitmapH
     return;
 
   // Validate numOptions to be in range 1-3
-  if (numOptions < 1)
+  if (numOptions == 0)
     numOptions = 1;
   if (numOptions > 3)
     numOptions = 3;
