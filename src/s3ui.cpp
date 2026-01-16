@@ -605,7 +605,7 @@ void s3ui::showConfirm(const uint8_t *bitmap, uint16_t bitmapW, uint16_t bitmapH
   if (numOptions == 0 || options == nullptr)
     return;
 
-  uint8_t buttonHeight = contentFontHeight + 2 * optionPadding;
+  uint16_t buttonHeight = contentFontHeight + 2 * optionPadding;
   uint8_t hSpacing = optionPadding; // horizontal spacing between buttons
   uint8_t vSpacing = optionPadding; // vertical spacing between buttons
 
