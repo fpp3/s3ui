@@ -110,7 +110,7 @@ See the `examples/` folder for complete working examples:
 - `optionSelect_test` - Option selection menu
 - `optionValueSet_test` - Editable values interface
 - `static_runningActivityScreen_test` - Static activity display
-- `confirmationScreen_test` - Confirmation dialog with smart layout
+- `confirmScreen_test` - Confirmation dialog with smart layout
 
 ## License
 
