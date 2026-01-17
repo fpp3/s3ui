@@ -299,28 +299,46 @@ void s3ui::showRunningActivity(const uint8_t *bitmap, uint16_t bitmapW, uint16_t
   uint16_t contentLeft = contentBoxThickness;
   uint16_t contentWidth = displayWidth - 2 * contentBoxThickness;
 
-  // Caption handling: truncate to fit width and place one line below bitmap
-  String captionText = caption;
-  bool hasCaption = captionText.length() > 0 && contentFont;
-  int16_t capWidth = 0;
+  // Prepare caption: auto-wrap and interpret \n and \r like live log
+  String capText = caption;
+  bool hasCaption = capText.length() > 0 && contentFont;
+  uint16_t availWidth = contentWidth - 2 * optionPadding;
+  uint16_t lineHeight = contentFontHeight + contentFontHeight * 0.2; // match live log spacing
+
+  // Compute wrapped caption lines
+  std::vector<String> captionLines;
   if (hasCaption) {
-    int16_t maxCaptionWidth = (int16_t)contentWidth - 2 * optionPadding;
-    capWidth = strWidth(captionText, contentFont, contentSize);
-    if (capWidth > maxCaptionWidth) {
-      const String ellipsis = "...";
-      int16_t ellWidth = strWidth(ellipsis, contentFont, contentSize);
-      String trimmed = captionText;
-      while (trimmed.length() > 0 && (strWidth(trimmed, contentFont, contentSize) + ellWidth) > maxCaptionWidth) {
-        trimmed.remove(trimmed.length() - 1);
+    int16_t segmentStart = 0;
+    for (int16_t pos = 0; pos <= (int16_t)capText.length(); pos++) {
+      bool isNewline = (pos < (int16_t)capText.length()) && (capText[pos] == '\n' || capText[pos] == '\r');
+      bool isEnd = (pos == (int16_t)capText.length());
+
+      if (isNewline || isEnd) {
+        String segment = capText.substring(segmentStart, pos);
+        if (segment.length() > 0) {
+          int16_t segmentWidth = strWidth(segment, contentFont, contentSize);
+          if (segmentWidth <= availWidth) {
+            captionLines.push_back(segment);
+          } else {
+            // Wrap segment into chunks
+            uint16_t chunkStart = 0;
+            while (chunkStart < segment.length()) {
+              uint16_t chunkLen = findWrapPoint(segment, chunkStart, availWidth);
+              if (chunkLen == 0)
+                chunkLen = 1;
+              captionLines.push_back(segment.substring(chunkStart, chunkStart + chunkLen));
+              chunkStart += chunkLen;
+            }
+          }
+        }
+        segmentStart = pos + 1;
       }
-      captionText = trimmed + ellipsis;
-      capWidth = strWidth(captionText, contentFont, contentSize);
     }
   }
 
-  // Compute group vertical layout (bitmap + caption one line below)
-  uint16_t captionLine = hasCaption ? contentFontHeight : 0;
-  uint16_t groupHeight = bitmapH + captionLine;
+  // Compute group vertical layout (bitmap + caption below)
+  uint16_t captionTotalHeight = hasCaption ? (uint16_t)captionLines.size() * lineHeight : 0;
+  uint16_t groupHeight = bitmapH + captionTotalHeight;
   int16_t groupTop = (int16_t)contentTop;
   if (groupHeight <= contentHeight) {
     groupTop = (int16_t)contentTop + ((int16_t)contentHeight - (int16_t)groupHeight) / 2;
@@ -334,21 +352,25 @@ void s3ui::showRunningActivity(const uint8_t *bitmap, uint16_t bitmapW, uint16_t
   // Draw bitmap
   gfx->drawBitmap(bmpX, bmpY, bitmap, bitmapW, bitmapH, 1);
 
-  // Draw caption one line below the bitmap, centered, if present
-  if (hasCaption) {
-    int16_t capX = (int16_t)contentLeft + ((int16_t)contentWidth - capWidth) / 2;
-    // Baseline one line below the bitmap
-    int16_t capBaselineY = bmpY + (int16_t)bitmapH + (int16_t)contentFontHeight - 1;
-    // Clamp to content area bottom to avoid cutting
-    int16_t maxBaseline = (int16_t)contentTop + (int16_t)contentHeight - 1;
-    if (capBaselineY > maxBaseline)
-      capBaselineY = maxBaseline;
-
+  // Draw wrapped caption lines below the bitmap
+  if (hasCaption && !captionLines.empty()) {
     gfx->setFont(contentFont);
     gfx->setTextColor(1);
     gfx->setTextWrap(false);
-    gfx->setCursor(capX, capBaselineY);
-    gfx->print(captionText);
+
+    int16_t drawY = bmpY + (int16_t)bitmapH;
+    int16_t maxBaseline = (int16_t)contentTop + (int16_t)contentHeight - 1;
+    for (size_t i = 0; i < captionLines.size(); i++) {
+      const String &line = captionLines[i];
+      int16_t lineW = strWidth(line, contentFont, contentSize);
+      int16_t lineX = (int16_t)contentLeft + ((int16_t)contentWidth - lineW) / 2;
+      int16_t baselineY = drawY + (int16_t)contentFontHeight - 1;
+      if (baselineY > maxBaseline)
+        break;
+      gfx->setCursor(lineX, baselineY);
+      gfx->print(line);
+      drawY += lineHeight;
+    }
   }
 }
 
