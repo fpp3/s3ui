@@ -1,8 +1,10 @@
-// RunningActivity animated screen test using PCF8814 and s3ui wrapper
 
-#include <s3ui.h>
-#include <PCF8814.h>
-#include <Picopixel.h>
+// RunningActivity animated screen test using PCF8814 and Display wrapper
+
+#include <Arduino.h>
+#include "s3ui.h"
+#include "PCF8814.h"
+#include "Fonts/Picopixel.h"
 
 static const unsigned char PROGMEM image_download_0_bits[] = {0x00,0x00,0x00,0x07,0xff,0xf0,0x04,0x00,0x10,0x03,0xff,0xe0,0x01,0x00,0x40,0x01,0x7f,0x40,0x01,0x7f,0x40,0x01,0x3e,0x40,0x00,0x9c,0x80,0x00,0x49,0x00,0x00,0x22,0x00,0x00,0x14,0x00,0x00,0x14,0x00,0x00,0x22,0x00,0x00,0x49,0x00,0x00,0x80,0x80,0x01,0x00,0x40,0x01,0x00,0x40,0x01,0x00,0x40,0x01,0x00,0x40,0x03,0xff,0xe0,0x04,0x00,0x10,0x07,0xff,0xf0,0x00,0x00,0x00};
 
@@ -39,6 +41,30 @@ static const uint16_t kFrameDelayMs = 250;
 static PCF8814 lcd(19, 18, 23, 21);
 static s3ui ui;
 
+// Test case structure for animated running activity
+struct AnimatedActivityCase {
+  const char* title;
+  const char* caption;
+};
+
+static AnimatedActivityCase kCases[] = {
+  // 1) No wrap (short text)
+  {"Scanning 1/5", "Ready."},
+  // 2) Wrap (long text)
+  {"Scanning 2/5", "Finding channels and scanning spectrum occupancy to avoid interference. The following description should wrap into multiple lines below the bitmap to validate auto-wrap logic."},
+  // 3) Explicit newline (\n)
+  {"Scanning 3/5", "Calibrating\nScanning"},
+  // 4) Carriage return (\r)
+  {"Scanning 4/5", "Stage One\rStage Two"},
+  // 5) Mixed long + newline
+  {"Scanning 5/5", "Collecting samples and computing noise floor for adaptive channel selection.\nPlease wait..."}
+};
+
+static const uint8_t kNumCases = sizeof(kCases) / sizeof(kCases[0]);
+static uint8_t currentCase = 0;
+static unsigned long lastStep = 0;
+static const uint16_t stepMs = 2000; // 2s per case
+
 void setup() {
   // Initialize display
   lcd.begin();
@@ -52,8 +78,8 @@ void setup() {
   ui.setTitleSize(1);
   ui.setContentSize(1);
 
-  // Render animated running activity screen
-  ui.runningActivityScreen("Scanning", "98%", animationFrames, kNumFrames, kBitmapW, kBitmapH, kFrameDelayMs, "Finding channels...");
+  // Initial render: first case
+  ui.runningActivityScreen(kCases[currentCase].title, "98%", animationFrames, kNumFrames, kBitmapW, kBitmapH, kFrameDelayMs, kCases[currentCase].caption);
   lcd.display();
 }
 
@@ -64,4 +90,18 @@ void loop() {
   
   // Small delay to prevent overwhelming the MCU
   delay(10);
+
+  // Cycle through cases to demonstrate no-wrap, wrap, and newline handling
+  unsigned long now = millis();
+  if (now - lastStep >= stepMs) {
+    lastStep = now;
+
+    currentCase++;
+    if (currentCase >= kNumCases) {
+      currentCase = 0;
+    }
+
+    ui.runningActivityScreen(kCases[currentCase].title, "98%", animationFrames, kNumFrames, kBitmapW, kBitmapH, kFrameDelayMs, kCases[currentCase].caption);
+    lcd.display();
+  }
 }
